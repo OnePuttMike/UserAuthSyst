@@ -44,7 +44,7 @@ if((isset($_SESSION['id']) || isset($_GET{'user_identity'})) && !isset($_POST['u
     $form_errors = array_merge($form_errors, check_min_length($fields_to_check_length));
     
     //email validation / merge the return data into form_error array
-    $form_errors = array_merge($form_errors, check_email($POST));
+    $form_errors = array_merge($form_errors, check_email($_POST));
     
     //collect form data and store in veriables
     $firstname = $_POST ['firstname'];
