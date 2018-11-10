@@ -79,9 +79,9 @@ function show_errors($form_errors_array){
 
 function flashMessage($message, $passOrFail = "Fail"){
     if($passOrFail === "Pass"){
-        $data = "<p style='padding:20px; border: 1px solid gray; color: green;'>{$message}</p>";
+        $data = "<div class='alert alert-success'>{$message}</p>";
     }else{
-        $data = "<p style='padding:20px; border: 1px solid gray; color: red;'>{$message}</p>";
+        $data = "<div class='alert-danger'>{$message}</p>";
     }
     
     return $data;
@@ -105,4 +105,66 @@ function checkDuplicateEntries($table, $column_name, $value, $db){
         //handle exception
     }
     
+}
+
+function rememberMe($user_id){
+     $encryptCookieData = base64_e4ncode("5077190132778248371B3XP07{$user_id}");
+     // Cookie set to expire in 30 days
+     setcookie("rememberUserCookie", $encryptCookieData, time()+60*60*24*100, "/");
+ }
+ 
+function isCookieValid($db){
+    $isValid = false;
+    
+    if (isset($_COOKIE['rememberUserCookie'])){
+        $decryptCookieData = base64_decode($_COOKIE['rememberUserCookie']);
+        $user_id = explode("5077190132778248371B3XP07", $decryptCookieData);
+        $userID = $user_id[1];
+        $sqlQuery = "SELECT * FROM users WHERE id =:id";
+        $statement = $db->prepare($sqlQuery);
+        $statement->execute(array(":id => userID"));
+        
+        if($row = $statement->fetch()){
+            $id = $row['id'];
+            $username =$row['username'];
+            $_SESSION['id'] =$id;
+            $SESSION['username'] = $username;
+            $isValid = true;
+        }else{
+            $isValid =false;
+            signout();
+        }
+    }
+    return $isValid;
+} 
+function signout(){
+    unset($_SESSION['username']);
+    unset($_SESSION['id']);
+    
+        if(isset($_COOKIE['rememberUserCookie'])){
+            unset($_COOKIE['rememberUserCookie']);
+            setcookie('rememberUserCookie', null -1, '/');    
+    }
+    session_destory();
+    session_regenerate_id(true);
+    redirect('index');
+}
+
+function guard(){
+    
+    $isValid = true;
+    $inactive = 60 * 2; //2mins
+    $fingerprint = md5($_SERVER['REMOTE_ADDR'] . $_server['HTTP_USER_AGENT']);
+    
+    if((isset($_SESSION['fingerprint']) && $_SESSION['fingerprint'] != $fingerprint)){
+        $isValid = false;
+        signout();
+    }else if((isset($_SESSION['last_active']) && (time() - $_SESSION['last_active']) > $inactive) && $_SESSION['username']){
+        $isValid = false;
+        signout();
+    }else{
+        $_SESSION['last_active'] = time();
+    }
+    
+    return $isValid;
 }
